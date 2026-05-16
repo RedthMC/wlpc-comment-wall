@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8" />
+    <title>Fermata Comment Wall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Serif+TC:wght@400&family=Noto+Serif:wght@400&display=swap" />
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+     <link href="https://cdn.discordapp.com/attachments/1096476173854310421/1504516405926695003/tailwind-min.css?ex=6a074597&is=6a05f417&hm=9387ed4406a9cd123d04c9910aff0a14e4c31138a50c3ac90305ed63a744650a&" rel="stylesheet">
+    <style>
+        /* body {
+            font-family: 'Inter', sans-serif;
+        } */
+
+        h1,
+        h2 {
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        .fade-text {
+            animation: fadeIn 500ms ease-in-out forwards;
+        }
+
+        .fade-text.is-switching {
+            animation: fadeOut 500ms ease-in-out forwards;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+    <script type="module">
+        import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
+        const { a, article, div, h1, h2, header, img, main, p, section, span, strong } = van.tags;
+
+        const sampleComments = [
+            { name: 'NPC', timestamp: '剛剛', comment: 'hi' },
+            { name: 'NPC', timestamp: '剛剛', comment: '日本利用壓電磁磚將腳步轉化為電能。這些瓷磚捕捉來自你腳步的動能。當你行走時,你的重量和動作會對瓷磚產生壓力。磁磚會輕微彎曲,從而產生機械應力。磁磚內部的壓電材料將這種應力轉化為電能。每一步都會產生少量電荷,而數百萬步結合在一起就能產生足夠的電力來驅動 LED燈、數位顯示器和感測器。在像澀谷車站這樣繁忙的地方,每天大約有240萬個腳步為此系統作出貢獻。這些電能可以被儲存或立即使用,從而減少對傳統電賴,並支持永續的城市基礎設施。這種方法將日常運動轉化為實用的再生能源' },
+            { name: 'NPC', timestamp: '剛剛', comment: '我喜歡這個影展' },
+            { name: 'NPC', timestamp: '剛剛', comment: '你說的對，但是《原神》是由米哈游自主研發的一款全新開放世界冒險遊戲。遊戲發生在一個被稱作「提瓦特」的幻想世界，在這裡，被神選中的人將被授予「神之眼」，導引元素之力。你將扮演一位名為「旅行者」的神秘角色，在自由的旅行中邂逅性格各異、能力獨特的同伴們，和他們一起擊敗強敵，找回失散的親人—同時，逐步發掘「原神」的真相。 ' }, { name: 'NPC', timestamp: '剛剛', comment: 'this is fire' },
+            { name: 'NPC', timestamp: '剛剛', comment: 'this is fire' },
+            { name: 'NPC', timestamp: '10 分鐘前', comment: '余憶童稚時，能張目對日，明察秋毫。見藐小微物，必細察其紋理，故時有物外之趣。夏蚊成雷，私擬作群鶴舞空，心之所向，則或千或百，果然鶴也。' },
+            { name: 'NPC', timestamp: '10 分鐘前', comment: 'www' },
+            { name: 'NPC', timestamp: '10 分鐘前', comment: 'is this real' },
+            { name: 'NPC', timestamp: '10 分鐘前', comment: 'is this real' },
+            { name: 'NPC', timestamp: '10 分鐘前', comment: 'is this real' },
+            { name: 'NPC', timestamp: '10 分鐘前', comment: 'is this real' },
+            { name: 'loooooooooooooooooooooooooooooooooooooooong name', timestamp: '10 分鐘前', comment: 'This is a great event!' },
+            { name: 'Alice', timestamp: '10 分鐘前', comment: 'This is a looooooooooooooooooooooooooooooooooooooooooooong comment!' },
+            { name: 'Bob', timestamp: '10 分鐘前', comment: 'Had a wonderful time!' },
+            { name: 'Charlie', timestamp: '10 分鐘前', comment: 'Looking forward to the next one!' },
+        ];
+
+
+        const fading = van.state(false);
+
+        const comments = van.state([]);
+        const commentUrl = van.state(window.location.origin + window.location.pathname + '?page=comment');
+        const commentCount = van.derive(() => comments.val.length);
+        const qrCodeUrl = van.derive(() => {
+            const url = commentUrl.val;
+            if (!url) return '';
+            return 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
+        });
+
+        const noteColors = ['-rotate-1 -left-3', 'rotate-1 up-3', 'left-2', 'rotate-1 -up-1', '-rotate-1 up-2'];
+        const noteColor = (index) => noteColors[index % noteColors.length];
+
+        const CommentNote = (data, index) => article({ class: 'p-5 shadow-lg min-h-32 bg-gray-100 border border-gray-900 ' + noteColor(index), style: `width: ${index}px;` },
+            div({ class: 'fixed top-0 left-0 w-full p-3' }, // pin at the top mid
+                div({ class: 'w-3 h-3 bg-gray-500 rounded-full mx-auto shadow-lg' }),
+            ),
+            div({ class: 'flex justify-between items-start mb-3.5 border-b border-gray-300 pb-2' },
+                strong({ class: 'm-0 font-bold text-slate-800 text-lg break-all' }, data.name),
+                span({ class: 'm-0 text-gray-600 text-sm leading-relaxed' }, data.timestamp),
+            ),
+            p({ class: 'm-0 text-slate-900 text-lg leading-relaxed whitespace-pre-wrap break-words' }, data.comment),
+        );
+
+        const QrCodeNode = () => article({ class: 'relative p-5 shadow-lg border border-gray-900 min-h-64 w-64 bg-gray-100 rotate-1 ' },
+            div({ class: 'fixed top-0 left-0 w-full p-3' }, // pin at the top mid
+                div({ class: 'w-3 h-3 bg-gray-500 rounded-full mx-auto shadow-lg' }),
+            ),
+            div({ class: 'flex justify-center gap-2.5 items-start pb-2' },
+                strong({ class: 'm-0 font-bold text-slate-800 text-xl' }, "掃描即可留言"),
+            ),
+            div({ class: 'flex justify-center' },
+                img({ id: 'qrCode', src: qrCodeUrl, alt: 'QR code to comment page', class: 'w-auto h-48 p-4 bg-white' }),
+            )
+        );
+
+        const FixedNote = (data, x, y, width, rotation) => div({ class: 'fixed flex', style: `left: ${x}px; top: ${y}px; transform: rotate(${rotation}deg);` },
+            CommentNote(data, width),
+        );
+
+        const commentStartFromIndex = van.state(0); // for rotating through sample comments in fixed notes
+
+        const emptyComment = { name: '', timestamp: '', comment: '', };
+
+        const Notes = () => {
+            const commentList = comments.val || [];
+            console.log('Rendering notes with comments:', commentStartFromIndex.val, commentList);
+            return div({ class: 'fixed w-full h-full' + (fading.val ? ' fade-text is-switching' : ' fade-text') }, // fade in/out when comments update
+                FixedNote(commentList[commentStartFromIndex.val] ?? emptyComment, 350, 160, 300, -1),
+                FixedNote(commentList[commentStartFromIndex.val + 1] ?? emptyComment, 800, 120, 400, 1),
+                FixedNote(commentList[commentStartFromIndex.val + 2] ?? emptyComment, 200, 450, 260, 1.2),
+                FixedNote(commentList[commentStartFromIndex.val + 3] ?? emptyComment, 700, 420, 300, -1.2),
+                FixedNote(commentList[commentStartFromIndex.val + 4] ?? emptyComment, 1160, 360, 200, 0),
+                FixedNote(commentList[commentStartFromIndex.val + 5] ?? emptyComment, 540, 760, 400, 0),
+            )
+        }
+
+        const App = () => main({ class: 'mx-auto p-8 pb-12 sm:p-6 sm:pb-12 bg-gray-900' },
+            div({ class: 'fixed top-0 left-0 w-full h-full' },
+                img({ src: 'https://cdn.discordapp.com/attachments/1096476173854310421/1504496518466633768/1.png?ex=6a073312&is=6a05e192&hm=c0fdf4bee4ebb5fb6bc71ece3aae79f6906650b3262e2e8874523d686b95ab9d&', alt: 'Header Image', class: 'relative w-full h-full object-cover' })
+            ),
+            div({ class: 'fixed flex', style: 'left: 1540px; top: 400px;' },
+                QrCodeNode()
+            ),
+            Notes,
+        );
+
+        van.add(document.body, App());
+
+        const fadeInNewComments = (newComments) => {
+            fading.val = true;
+            setTimeout(() => {
+                console.info('Loaded.', newComments);
+                comments.val = newComments || [];
+                commentStartFromIndex.val = commentStartFromIndex.val + 6; // rotate through sample comments for fixed notes
+                if (commentStartFromIndex.val >= newComments.length) {
+                    commentStartFromIndex.val = 0;
+                }
+                fading.val = false;
+            }, 500);
+        };
+
+        const refreshComments = () => {
+            if (typeof google === 'undefined' || !google.script || !google.script.run) {
+                console.error('Google Apps Script environment not detected.');
+                fadeInNewComments(sampleComments);
+                return;
+            }
+            google.script.run.withSuccessHandler((list) => {
+                fadeInNewComments(list || []);
+            }).getComments();
+        };
+
+
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            console.error('Google Apps Script environment not detected.');
+        } else {
+            google.script.run.withSuccessHandler((url) => {
+                if (url && typeof url === 'string') {
+                    commentUrl.val = url + '?page=comment';
+                }
+            }).getWebAppUrl();
+        }
+
+        refreshComments();
+        setInterval(refreshComments, 10000);
+    </script>
+</body>
+
+</html>

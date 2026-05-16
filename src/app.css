@@ -1,0 +1,24 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Serif+TC:wght@400&family=Noto+Serif:wght@400&display=swap");
+
+@import "tailwindcss";
+
+@theme {
+    --font-sans: 'Inter', 'Segoe UI Emoji', sans-serif;
+    --font-serif: 'Noto Serif', 'Noto Serif TC', "Times New Roman", Times, serif;
+
+    --color-foreground: #303030;
+    --color-accent: #52413c;
+    --color-full: #303030;
+    --color-on-full: #ffffff;
+    --color-on-accent: #f0efef;
+    --color-paragraph: #6f6f6f;
+}
+
+@layer components {
+    .typo-logo {
+        @apply font-bold text-sm text-foreground leading-snug md:text-xl;
+    }
+    .typo-display {
+        @apply text-6xl font-serif tracking-tight md:text-9xl;
+    }
+}

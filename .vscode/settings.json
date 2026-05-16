@@ -1,0 +1,18 @@
+{
+    "files.exclude": {
+        "wrangler.jsonc": true,
+        "package-lock.json": true,
+        "worker-configuration.d.ts": true,
+        "vite.config.ts": true,
+        "tsconfig.json": true,
+        "svelte.config.js": true,
+        ".wrangler": true,
+        ".svelte-kit": true,
+        "node_modules": true,
+        "src/app.d.ts": true,
+        "src/app.html": false,
+        ".gitignore": true,
+        ".npmrc": true,
+        ".vscode": false
+    }
+}

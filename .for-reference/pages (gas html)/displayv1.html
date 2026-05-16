@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8" />
+    <title>Fermata Comment Wall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Serif+TC:wght@400&family=Noto+Serif:wght@400&display=swap" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* body {
+            font-family: 'Inter', sans-serif;
+        } */
+
+        h1,
+        h2 {
+            font-family: 'Noto Serif TC', serif;
+        }
+    </style>
+</head>
+
+<body>
+    <script type="module">
+        import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
+        const { a, article, div, h1, h2, header, img, main, p, section, span, strong } = van.tags;
+
+        const comments = van.state([]);
+        const commentUrl = van.state(window.location.origin + window.location.pathname + '?page=comment');
+        const commentCount = van.derive(() => comments.val.length);
+        const qrCodeUrl = van.derive(() => {
+            const url = commentUrl.val;
+            if (!url) return '';
+            return 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
+        });
+
+        const noteColors = ['-rotate-1 -left-3', 'rotate-1 up-3', 'left-2', 'rotate-1 -up-1', '-rotate-1 up-2'];
+        const noteColor = (index) => noteColors[index % noteColors.length];
+
+        const CommentNote = (data, index) => article({ class: 'relative p-5 shadow-lg transform transition-all duration-200 min-h-32 w-64 bg-gray-100 ' + noteColor(index) },
+            div({ class: 'absolute top-0 left-0 w-full p-3' }, // pin at the top mid
+                div({ class: 'w-3 h-3 bg-gray-500 rounded-full mx-auto shadow-lg' }),
+            ),
+            div({ class: 'flex justify-between gap-2.5 items-start mb-3.5 border-b border-black/5 pb-2' },
+                strong({ class: 'm-0 font-bold text-slate-800 text-lg' }, data.name || '匿名'),
+                span({ class: 'm-0 text-gray-600 text-sm leading-relaxed' }, data.timestamp),
+            ),
+            p({ class: 'm-0 text-slate-900 text-lg leading-relaxed whitespace-pre-wrap break-words' }, data.comment),
+        );
+
+        const QrCodeNode = () => article({ class: 'relative p-5 shadow-lg transform transition-all duration-200 min-h-64 w-64 bg-gray-100 rotate-1' },
+            div({ class: 'absolute top-0 left-0 w-full p-3' }, // pin at the top mid
+                div({ class: 'w-3 h-3 bg-gray-500 rounded-full mx-auto shadow-lg' }),
+            ),
+            div({ class: 'flex justify-center gap-2.5 items-start pb-2' },
+                strong({ class: 'm-0 font-bold text-slate-800 text-xl' }, "掃描即可留言"),
+                // span({ class: 'm-0 text-gray-600 text-sm leading-relaxed' }, "ss"),
+            ),
+            div({ class: 'flex justify-center' },
+                img({ id: 'qrCode', src: qrCodeUrl, alt: 'QR code to comment page', class: 'w-auto h-48 p-4 bg-white' }),
+            )
+            // h2({ class: 'font-serif text-xl text-slate-800' }, '掃描留言'),
+            // a({ class: 'flex flex-col items-center p-5 bg-white rounded-3xl border border-black/5', href: commentUrl, target: '_blank' },
+
+            // ),
+        );
+
+        const CommentsColumns = () => {
+            const list = comments.val || [];
+            if (!list.length) {
+                return div({ class: 'min-h-80 flex items-center justify-center text-gray-500 text-base' }, 'No comments yet. Be the first to leave one!');
+            }
+
+            const columns = [[QrCodeNode()], [], [], []];
+            const maxComments = Math.min(list.length, 12);
+            for (let i = 0; i < maxComments; i += 1) {
+                columns[i % 4].push(CommentNote(list[i], i));
+            }
+
+            const offsets = ['mt-0', 'mt-6', 'mt-2', 'mt-8'];
+
+            return div({ class: 'flex justify-center gap-8' }, // each column
+                columns.map((column, index) => div({ class: 'flex flex-col justify-start gap-8 ' + offsets[index] }, column)),
+            );
+        };
+
+        const App = () => main({ class: 'mx-auto p-8 pb-12 sm:p-6 sm:pb-12 bg-gray-900' },
+            div({ class: 'flex justify-center items-center gap-4 mb-8' },
+                div({ class: 'm-0 p-2 bg-gray-400 shadow-lg rotate-1' },
+                    h1({ class: 'm-0 px-8 py-4 text-4xl leading-tight tracking-tight bg-gray-100 shadow-lg -rotate-1' }, '留言板'),
+                ),
+            ),
+            section(CommentsColumns),
+            // div({ class: 'fixed bottom-0 left-0' },
+            //     a({ class: 'flex flex-col items-center p-5 bg-white rounded-3xl border border-black/5', href: commentUrl, target: '_blank' },
+            //         img({ id: 'qrCode', src: qrCodeUrl, alt: 'QR code to comment page', class: 'w-48 h-48 block rounded-2xl' }),
+            //         h2({ class: 'font-serif text-xl text-slate-800' }, '掃描留言'),
+            //     ),
+            // ),
+        );
+
+        van.add(document.body, App());
+        document.body.className = 'bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.95),transparent_25%),#efe9dd] text-gray-800 font-inter';
+
+        const refreshComments = () => {
+            if (typeof google === 'undefined' || !google.script || !google.script.run) {
+                console.error('Google Apps Script environment not detected.');
+
+                comments.val = [
+                    { name: 'NPC', timestamp: '剛剛', comment: 'hi' },
+                    { name: 'NPC', timestamp: '剛剛', comment: '日本利用壓電磁磚將腳步轉化為電能。這些瓷磚捕捉來自你腳步的動能。當你行走時,你的重量和動作會對瓷磚產生壓力。磁磚會輕微彎曲,從而產生機械應力。磁磚內部的壓電材料將這種應力轉化為電能。每一步都會產生少量電荷,而數百萬步結合在一起就能產生足夠的電力來驅動 LED燈、數位顯示器和感測器。在像澀谷車站這樣繁忙的地方,每天大約有240萬個腳步為此系統作出貢獻。這些電能可以被儲存或立即使用,從而減少對傳統電賴,並支持永續的城市基礎設施。這種方法將日常運動轉化為實用的再生能源' },
+                    { name: 'NPC', timestamp: '剛剛', comment: '我喜歡這個影展' },
+                    { name: 'NPC', timestamp: '剛剛', comment: '你說的對，但是《原神》是由米哈游自主研發的一款全新開放世界冒險遊戲。遊戲發生在一個被稱作「提瓦特」的幻想世界，在這裡，被神選中的人將被授予「神之眼」，導引元素之力。你將扮演一位名為「旅行者」的神秘角色，在自由的旅行中邂逅性格各異、能力獨特的同伴們，和他們一起擊敗強敵，找回失散的親人—同時，逐步發掘「原神」的真相。 ' }, { name: 'NPC', timestamp: '剛剛', comment: 'this is fire' },
+                    { name: 'NPC', timestamp: '剛剛', comment: 'this is fire' },
+                    { name: 'NPC', timestamp: '10 分鐘前', comment: '余憶童稚時，能張目對日，明察秋毫。見藐小微物，必細察其紋理，故時有物外之趣。夏蚊成雷，私擬作群鶴舞空，心之所向，則或千或百，果然鶴也。' },
+                    { name: 'NPC', timestamp: '10 分鐘前', comment: 'www' },
+                    { name: 'NPC', timestamp: '10 分鐘前', comment: 'is this real' },
+                    { name: 'NPC', timestamp: '10 分鐘前', comment: 'is this real' },
+                    { name: 'NPC', timestamp: '10 分鐘前', comment: 'is this real' },
+                    { name: 'NPC', timestamp: '10 分鐘前', comment: 'is this real' },
+                    { name: 'loooooooooooooooooooooooooooooooooooooooong name', timestamp: '10 分鐘前', comment: 'This is a great event!' },
+                    { name: 'Alice', timestamp: '10 分鐘前', comment: 'This is a looooooooooooooooooooooooooooooooooooooooooooong comment!' },
+                    { name: 'Bob', timestamp: '10 分鐘前', comment: 'Had a wonderful time!' },
+                    { name: 'Charlie', timestamp: '10 分鐘前', comment: 'Looking forward to the next one!' },
+                ]; // local testing data
+                return;
+            }
+            google.script.run.withSuccessHandler((list) => {
+                comments.val = list || [];
+            }).getComments();
+        };
+
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            console.error('Google Apps Script environment not detected.');
+        } else {
+            google.script.run.withSuccessHandler((url) => {
+                if (url && typeof url === 'string') {
+                    commentUrl.val = url + '?page=comment';
+                }
+            }).getWebAppUrl();
+        }
+
+        refreshComments();
+        setInterval(refreshComments, 10000);
+    </script>
+</body>
+
+</html>
